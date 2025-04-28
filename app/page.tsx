@@ -57,7 +57,7 @@ export default function Home() {
       let fileText: string;
 
       if (file.type === "application/pdf") {
-        // Upload PDF to OpenAI
+        // Upload PDF to OpenAI and get the content
         const formData = new FormData();
         formData.append("file", file);
         const response = await fetch("/api/upload", {
@@ -66,7 +66,7 @@ export default function Home() {
         });
         if (!response.ok) throw new Error("Failed to upload PDF");
         const data = await response.json();
-        fileText = data.fileId;
+        fileText = data.text;
       } else if (
         file.type ===
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"

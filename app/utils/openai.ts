@@ -1,3 +1,9 @@
+import { OpenAI } from 'openai';
+
+export const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 export async function uploadFileToOpenAI(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);

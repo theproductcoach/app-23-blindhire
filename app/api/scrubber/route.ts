@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Candidate } from '../../types/candidate';
+import { OpenAI } from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +17,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send the text to GPT for scrubbing (mocked for now)
+    // Send the text to GPT for scrubbing
     const scrubbedText = await scrubWithGPT(text);
 
     // Create a new candidate with scrubbed text
@@ -36,8 +41,55 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Mock GPT call (replace with OpenAI API call in production)
 async function scrubWithGPT(text: string): Promise<string> {
-  // TODO: Replace this with a real OpenAI API call
-  return `APPLICANT #${Math.floor(Math.random() * 1000)}\n` + text;
+  const prompt = `You are a resume anonymization assistant. Your task is to remove all personal identifying information from the following text while preserving professional experience and skills. Specifically:
+
+1. Remove or replace:
+   - Names (first, last, full)
+   - Email addresses
+   - Phone numbers
+   - Physical addresses
+   - Social media handles
+   - Personal websites
+   - Age, gender, or other demographic information
+   - Photos or image references
+   - References to specific schools, universities, or educational institutions
+   - References to specific companies or organizations
+   - Dates (years can be kept but specific dates should be removed)
+
+2. Preserve:
+   - Professional skills and qualifications
+   - Job titles and roles
+   - Years of experience
+   - Technical skills and tools
+   - Project descriptions
+   - Achievements and accomplishments
+   - Industry-specific terminology
+
+3. Format:
+   - Return only the scrubbed text
+   - Do not include any explanations or metadata
+   - Maintain the original structure and formatting where possible
+   - Use placeholders like [COMPANY], [UNIVERSITY], etc. for removed information
+
+Here is the text to process:
+${text}`;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content: "You are a professional resume anonymization assistant that removes personal information while preserving professional details."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ],
+    temperature: 0.3,
+    max_tokens: 2000
+  });
+
+  return response.choices[0].message.content || text;
 } 
