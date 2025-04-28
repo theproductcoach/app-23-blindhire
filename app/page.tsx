@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import { JOBS } from "./types/job";
-import { extractTextFromFile } from "./utils/fileExtract";
+import { extractTextFromDocx } from "./utils/docxExtract";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -54,21 +54,42 @@ export default function Home() {
     setSuccess(null);
 
     try {
-      // Extract text from file (PDF, DOCX, or plain text)
-      const fileText = await extractTextFromFile(file);
+      let fileText: string;
+
+      if (file.type === "application/pdf") {
+        // Upload PDF to OpenAI
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) throw new Error("Failed to upload PDF");
+        const data = await response.json();
+        fileText = data.fileId;
+      } else if (
+        file.type ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        // Handle DOCX
+        fileText = await extractTextFromDocx(file);
+      } else {
+        // Handle plain text
+        fileText = await file.text();
+      }
 
       // Send extracted text to the API
-      const response = await fetch("/api/scrubber", {
+      const scrubberResponse = await fetch("/api/scrubber", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: fileText, jobId: selectedJobId }),
       });
 
-      if (!response.ok) {
+      if (!scrubberResponse.ok) {
         throw new Error("Failed to process the file");
       }
 
-      const data = await response.json();
+      const data = await scrubberResponse.json();
       if (data.error) {
         throw new Error(data.error);
       }
