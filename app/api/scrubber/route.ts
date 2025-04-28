@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Create a new candidate with scrubbed text
     const candidate: Candidate = {
-      id: crypto.randomUUID(),
+      id: (Math.floor(100000 + Math.random() * 900000)).toString(),
       jobId,
       scrubbedText,
       originalText: text,

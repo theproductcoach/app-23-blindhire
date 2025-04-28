@@ -111,7 +111,7 @@ export default function CandidatesContent() {
                 >
                   <div>
                     <h3 className="text-lg font-medium text-white">
-                      {candidate.scrubbedText.split("\n")[0]}
+                      {`Candidate #${candidate.id}`}
                     </h3>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-400">
