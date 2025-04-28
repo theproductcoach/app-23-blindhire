@@ -147,11 +147,11 @@ export default function Home() {
             </p>
           </div>
 
-          <h1 className="text-3xl font-bold text-center mb-4 text-white">
-            Welcome to BlindHire
+          <h1 className="text-2xl font-bold text-center mb-4 text-white">
+            Get Started
           </h1>
           <p className="text-gray-300 text-center mb-8">
-            Upload a CV to remove bias and anonymise personal information.
+            When you apply the AI will anonymise your resume to remove bias.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
