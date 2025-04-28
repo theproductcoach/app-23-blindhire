@@ -4,20 +4,21 @@ import { useState, useCallback } from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import { JOBS } from "./types/job";
+import { extractTextFromFile } from "./utils/fileExtract";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scrubbedText, setScrubbedText] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setError(null);
-      setScrubbedText(null);
+      setSuccess(null);
     }
   };
 
@@ -37,7 +38,7 @@ export default function Home() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setFile(e.dataTransfer.files[0]);
       setError(null);
-      setScrubbedText(null);
+      setSuccess(null);
     }
   }, []);
 
@@ -50,16 +51,17 @@ export default function Home() {
 
     setIsLoading(true);
     setError(null);
-    setScrubbedText(null);
+    setSuccess(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("jobId", selectedJobId);
+      // Extract text from file (PDF, DOCX, or plain text)
+      const fileText = await extractTextFromFile(file);
 
+      // Send extracted text to the API
       const response = await fetch("/api/scrubber", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: fileText, jobId: selectedJobId }),
       });
 
       if (!response.ok) {
@@ -70,7 +72,22 @@ export default function Home() {
       if (data.error) {
         throw new Error(data.error);
       }
-      setScrubbedText(data.candidate.scrubbedText);
+
+      // Store the candidate in localStorage
+      const existingCandidates = JSON.parse(
+        localStorage.getItem("blindhire_candidates") || "[]"
+      );
+      existingCandidates.push(data.candidate);
+      localStorage.setItem(
+        "blindhire_candidates",
+        JSON.stringify(existingCandidates)
+      );
+
+      setSuccess(
+        "Resume submitted successfully! You can view it in the Candidates tab."
+      );
+      setFile(null);
+      setSelectedJobId("");
     } catch (err) {
       setError(
         err instanceof Error
@@ -298,6 +315,13 @@ export default function Home() {
               )}
             </button>
 
+            {/* Success Message */}
+            {success && (
+              <div className="mt-4 p-3 bg-green-900/50 border border-green-700 rounded-md">
+                <p className="text-sm text-green-200">{success}</p>
+              </div>
+            )}
+
             {/* Error Message */}
             {error && (
               <div className="mt-4 p-3 bg-red-900/50 border border-red-700 rounded-md">
@@ -305,20 +329,6 @@ export default function Home() {
               </div>
             )}
           </form>
-
-          {/* Scrub Results */}
-          {scrubbedText && (
-            <div className="mt-8 p-6 bg-gray-700 rounded-lg">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Anonymised CV
-              </h3>
-              <div className="prose prose-invert max-w-none">
-                <pre className="whitespace-pre-wrap text-sm text-gray-200 font-mono">
-                  {scrubbedText}
-                </pre>
-              </div>
-            </div>
-          )}
 
           {/* Integration Section */}
           <div className="mt-12 pt-8 border-t border-gray-700">

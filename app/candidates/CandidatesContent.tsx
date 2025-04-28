@@ -7,7 +7,6 @@ import Hero from "../components/Hero";
 import Modal from "../components/Modal";
 import { Candidate } from "../types/candidate";
 import { JOBS } from "../types/job";
-import { CandidateStorage } from "../utils/candidateStorage";
 
 export default function CandidatesContent() {
   const searchParams = useSearchParams();
@@ -27,9 +26,12 @@ export default function CandidatesContent() {
 
   useEffect(() => {
     const loadCandidates = () => {
+      const allCandidates = JSON.parse(
+        localStorage.getItem("blindhire_candidates") || "[]"
+      );
       const filteredCandidates = selectedJob
-        ? CandidateStorage.getByJobId(selectedJob)
-        : CandidateStorage.getAll();
+        ? allCandidates.filter((c: Candidate) => c.jobId === selectedJob)
+        : allCandidates;
       setCandidates(filteredCandidates);
     };
 
