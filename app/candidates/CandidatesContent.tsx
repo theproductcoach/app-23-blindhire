@@ -7,7 +7,7 @@ import Hero from "../components/Hero";
 import Modal from "../components/Modal";
 import { Candidate } from "../types/candidate";
 import { JOBS } from "../types/job";
-import { MOCK_CANDIDATES } from "../types/mockData";
+import { CandidateStorage } from "../utils/candidateStorage";
 
 export default function CandidatesContent() {
   const searchParams = useSearchParams();
@@ -26,10 +26,24 @@ export default function CandidatesContent() {
   }, [jobId]);
 
   useEffect(() => {
-    const filteredCandidates = selectedJob
-      ? MOCK_CANDIDATES.filter((candidate) => candidate.jobId === selectedJob)
-      : MOCK_CANDIDATES;
-    setCandidates(filteredCandidates);
+    const loadCandidates = () => {
+      const filteredCandidates = selectedJob
+        ? CandidateStorage.getByJobId(selectedJob)
+        : CandidateStorage.getAll();
+      setCandidates(filteredCandidates);
+    };
+
+    loadCandidates();
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "blindhire_candidates") {
+        loadCandidates();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [selectedJob]);
 
   const getJobTitle = (jobId: string) => {

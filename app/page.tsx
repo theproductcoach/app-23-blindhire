@@ -57,7 +57,7 @@ export default function Home() {
       formData.append("file", file);
       formData.append("jobId", selectedJobId);
 
-      const response = await fetch("/api/scrub", {
+      const response = await fetch("/api/scrubber", {
         method: "POST",
         body: formData,
       });
@@ -67,7 +67,10 @@ export default function Home() {
       }
 
       const data = await response.json();
-      setScrubbedText(data.text);
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      setScrubbedText(data.candidate.scrubbedText);
     } catch (err) {
       setError(
         err instanceof Error
