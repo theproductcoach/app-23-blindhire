@@ -1,4 +1,5 @@
 import { Candidate } from "../types/candidate";
+import { demoCandidates } from "./demoCandidates";
 
 const CANDIDATES_STORAGE_KEY = 'blindhire_candidates';
 
@@ -17,7 +18,12 @@ export const CandidateStorage = {
   getAll(): Candidate[] {
     try {
       const data = localStorage.getItem(CANDIDATES_STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
+      if (!data) {
+        // Initialize with demo candidates if storage is empty
+        localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(demoCandidates));
+        return demoCandidates;
+      }
+      return JSON.parse(data);
     } catch (error) {
       console.error('Error getting candidates:', error);
       return [];

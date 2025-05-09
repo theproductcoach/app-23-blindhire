@@ -7,6 +7,7 @@ import Hero from "../components/Hero";
 import Modal from "../components/Modal";
 import { Candidate } from "../types/candidate";
 import { JOBS } from "../types/job";
+import { CandidateStorage } from "../utils/candidateStorage";
 
 export default function CandidatesContent() {
   const searchParams = useSearchParams();
@@ -17,6 +18,7 @@ export default function CandidatesContent() {
     null
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showDemoCandidates, setShowDemoCandidates] = useState(false);
 
   useEffect(() => {
     if (jobId) {
@@ -24,29 +26,29 @@ export default function CandidatesContent() {
     }
   }, [jobId]);
 
+  const loadCandidates = () => {
+    const allCandidates = CandidateStorage.getAll();
+
+    // Filter out demo candidates if demo mode is off
+    const filteredCandidates = allCandidates.filter(
+      (c: Candidate) => showDemoCandidates || !c.id.startsWith("demo-")
+    );
+
+    // Apply job filter if selected
+    const jobFilteredCandidates = selectedJob
+      ? filteredCandidates.filter((c: Candidate) => c.jobId === selectedJob)
+      : filteredCandidates;
+
+    setCandidates(jobFilteredCandidates);
+  };
+
   useEffect(() => {
-    const loadCandidates = () => {
-      const allCandidates = JSON.parse(
-        localStorage.getItem("blindhire_candidates") || "[]"
-      );
-      const filteredCandidates = selectedJob
-        ? allCandidates.filter((c: Candidate) => c.jobId === selectedJob)
-        : allCandidates;
-      setCandidates(filteredCandidates);
-    };
-
     loadCandidates();
+  }, [selectedJob, showDemoCandidates]);
 
-    // Listen for storage changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "blindhire_candidates") {
-        loadCandidates();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [selectedJob]);
+  const handleToggleDemo = () => {
+    setShowDemoCandidates(!showDemoCandidates);
+  };
 
   const getJobTitle = (jobId: string) => {
     const job = JOBS.find((j) => j.id === jobId);
@@ -80,6 +82,26 @@ export default function CandidatesContent() {
       </div>
       <div className="flex items-center justify-center pt-8">
         <div className="w-full max-w-md md:max-w-xl lg:max-w-2xl p-8 bg-gray-800 rounded-lg shadow-xl border border-gray-700">
+          <div className="flex justify-end mb-6">
+            <div className="flex items-center space-x-2">
+              <label htmlFor="demo-toggle" className="text-sm text-gray-300">
+                Show Demo Candidates
+              </label>
+              <button
+                id="demo-toggle"
+                onClick={handleToggleDemo}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  showDemoCandidates ? "bg-blue-600" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    showDemoCandidates ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-white">Candidate List</h1>
             <div className="flex items-center space-x-4">
@@ -110,9 +132,16 @@ export default function CandidatesContent() {
                   className="flex items-center justify-between p-4 bg-gray-700 rounded-lg border border-gray-600 hover:border-gray-500 transition-colors"
                 >
                   <div>
-                    <h3 className="text-lg font-medium text-white">
-                      {`Candidate #${candidate.id}`}
-                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-medium text-white">
+                        {`Candidate #${candidate.id}`}
+                      </h3>
+                      {candidate.id.startsWith("demo-") && (
+                        <span className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded-full">
+                          Demo
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-400">
                         {getJobTitle(candidate.jobId)}
